@@ -1,0 +1,9 @@
+---
+profiles:
+  real_estate:
+    network: Testnet
+    private_key: "0x278f739fb18c321304be91bcc6c450c4bc19752ef170568d751c7143a6ff0c3d"
+    public_key: "0x39b1f9b89d9c392da9457d003f104684dd3211191e4448c673a7d6bec88b2847"
+    account: ac972fb1d1d89c57c5538d4c948345c8dbb08d5ab00a741894553463398c0576
+    rest_url: "https://fullnode.testnet.aptoslabs.com"
+    faucet_url: "https://faucet.testnet.aptoslabs.com"

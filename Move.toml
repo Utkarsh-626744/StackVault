@@ -1,0 +1,15 @@
+[package]
+name = "RealEstateToken"
+version = "1.0.0"
+authors = []
+
+[addresses]
+RealEstate="0xac972fb1d1d89c57c5538d4c948345c8dbb08d5ab00a741894553463398c0576"
+[dev-addresses]
+
+[dependencies.AptosFramework]
+git = "https://github.com/aptos-labs/aptos-core.git"
+rev = "mainnet"
+subdir = "aptos-move/framework/aptos-framework"
+
+[dev-dependencies]

@@ -1,0 +1,148 @@
+@import 'tailwindcss/base';
+@import 'tailwindcss/components';
+@import 'tailwindcss/utilities';
+
+@layer base {
+  body {
+    @apply bg-black text-white font-mono;
+  }
+}
+
+@layer components {
+  .neon-text {
+    @apply text-cyan-400 text-shadow-neon;
+  }
+  
+  .gradient-border {
+    @apply relative rounded-lg overflow-hidden;
+  }
+  
+  .gradient-border::before {
+    content: '';
+    @apply absolute inset-0 bg-gradient-to-r from-cyan-400 to-purple-500 -z-10;
+  }
+  
+  .gradient-border::after {
+    content: '';
+    @apply absolute inset-[1px] bg-black rounded-lg -z-10;
+  }
+
+  .glass-effect {
+    @apply bg-opacity-20 backdrop-filter backdrop-blur-lg;
+  }
+}
+
+.animated-background {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -1;
+  overflow: hidden;
+  perspective: 1000px;
+}
+
+.grid-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 200%;
+  height: 200%;
+  background-image: 
+    linear-gradient(to right, rgba(0, 255, 255, 0.1) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(0, 255, 255, 0.1) 1px, transparent 1px);
+    background-size: 50px 50px;
+    transform: rotateX(60deg) scale(2);
+    transform-origin: center center;
+    animation: gridMove 20s linear infinite;
+  }
+  
+  @keyframes gridMove {
+    0% {
+      transform: rotateX(60deg) scale(2) translateY(0);
+    }
+    100% {
+      transform: rotateX(60deg) scale(2) translateY(-50%);
+    }
+  }
+  
+  .text-shadow-neon {
+    text-shadow: 0 0 5px #00ffff, 0 0 10px #00ffff, 0 0 15px #00ffff, 0 0 20px #00ffff;
+  }
+  
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 8px;
+  }
+  
+  ::-webkit-scrollbar-track {
+    background: #000;
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    background: #00ffff;
+    border-radius: 4px;
+  }
+  
+  ::-webkit-scrollbar-thumb:hover {
+    background: #00cccc;
+  }
+  
+  /* Cyberpunk-inspired button */
+  .cyberpunk-button {
+    @apply relative inline-block px-8 py-3 font-bold text-black bg-cyan-400 rounded-md overflow-hidden transition-all duration-300 ease-in-out;
+  }
+  
+  .cyberpunk-button::before {
+    content: '';
+    @apply absolute top-0 left-0 w-full h-full bg-gradient-to-r from-purple-500 to-cyan-400 opacity-0 transition-opacity duration-300 ease-in-out;
+  }
+  
+  .cyberpunk-button:hover::before {
+    @apply opacity-50;
+  }
+  
+  .cyberpunk-button:hover {
+    @apply transform -translate-y-1 shadow-neon;
+  }
+  
+  .shadow-neon {
+    box-shadow: 0 0 10px rgba(0, 255, 255, 0.5), 0 0 20px rgba(0, 255, 255, 0.3), 0 0 30px rgba(0, 255, 255, 0.1);
+  }
+  
+  /* Full-page 3D grid background */
+  .full-page-grid {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -1;
+    overflow: hidden;
+    perspective: 1000px;
+  }
+  
+  .grid-container {
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background-image: 
+      linear-gradient(to right, rgba(0, 255, 255, 0.1) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(0, 255, 255, 0.1) 1px, transparent 1px);
+    background-size: 50px 50px;
+    transform: rotateX(60deg) scale(2);
+    transform-origin: center center;
+    animation: gridMove 20s linear infinite;
+  }
+  
+  @keyframes gridMove {
+    0% {
+      transform: rotateX(60deg) scale(2) translateY(0);
+    }
+    100% {
+      transform: rotateX(60deg) scale(2) translateY(-25%);
+    }
+  }

@@ -13,29 +13,41 @@ const TakeLoan = () => {
   const { client, updateBalance } = useAptos();
   const [selectedNFT, setSelectedNFT] = useState(null);
   const [loanAmount, setLoanAmount] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLockingCollateral, setIsLockingCollateral] = useState(false);
+  const [isTakingLoan, setIsTakingLoan] = useState(false)
   const [userNFTs, setUserNFTs] = useState([]);
   const [loanToValue, setLoanToValue] = useState(0);
   const [interestRate, setInterestRate] = useState(5); // Example interest rate
   const [showValuationModal, setShowValuationModal] = useState(false);
   
-  useEffect(() => {
-    const fetchUserNFTs = async () => {
-      if (account && client) {
-        try {
-          const resource = await client.getAccountResource(
-            account,
-            `${FULL_MODULE_NAME}::RealEstateCollection`
-          );
-          setUserNFTs(resource.data.tokens);
-        } catch (error) {
-          console.error("Error fetching user NFTs:", error);
+  const fetchUserNFTs = async () => {
+    if (account && client) {
+      try {
+        const resource = await client.getAccountResource(
+          account,
+          `${FULL_MODULE_NAME}::RealEstateCollection`
+        );
+        setUserNFTs(resource.data.tokens);
+        // Update selectedNFT if it exists in the new NFT list
+        if (selectedNFT) {
+          const updatedNFT = resource.data.tokens.find(nft => nft.id === selectedNFT.id);
+          setSelectedNFT(updatedNFT || null);
         }
+      } catch (error) {
+        console.error("Error fetching user NFTs:", error);
       }
-    };
+    }
+  };
 
+  useEffect(() => {
     fetchUserNFTs();
   }, [account, client]);
+
+  useEffect(() => {
+    // Reset loan amount when selected NFT changes
+    setLoanAmount('');
+    setLoanToValue(0);
+  }, [selectedNFT]);
 
   const lockCollateral = async () => {
     if (!wallet || !account || !selectedNFT) return;
@@ -43,7 +55,7 @@ const TakeLoan = () => {
       toast.warn("This token is already locked for collateral.");
       return;
     }
-    setIsLoading(true);
+    setIsLockingCollateral(true);
 
     const payload = buildTransactionPayload(
       `${FULL_MODULE_NAME}::lock_for_collateral`,
@@ -56,11 +68,20 @@ const TakeLoan = () => {
       await client.waitForTransaction(response.hash);
       toast.success("Collateral locked successfully!");
       setShowValuationModal(true);
+      
+      // Update the selectedNFT state directly
+      setSelectedNFT(prevNFT => ({
+        ...prevNFT,
+        locked_for_collateral: true
+      }));
+      
+      // Refresh the full NFT list
+      await fetchUserNFTs();
     } catch (error) {
       console.error("Error locking collateral:", error);
       toast.error(`Error locking collateral: ${error.message || 'Unknown error'}`);
     } finally {
-      setIsLoading(false);
+      setIsLockingCollateral(false);
     }
   };
 
@@ -79,7 +100,7 @@ const TakeLoan = () => {
       return;
     }
     
-    setIsLoading(true);
+    setIsTakingLoan(true);
 
     const payload = buildTransactionPayload(
       `${FULL_MODULE_NAME}::take_loan`,
@@ -94,11 +115,13 @@ const TakeLoan = () => {
       updateBalance(account);
       setSelectedNFT(null);
       setLoanAmount('');
+      // Refetch NFTs to update the state
+      await fetchUserNFTs();
     } catch (error) {
       console.error("Error taking loan:", error);
       toast.error(`Error taking loan: ${error.message || 'Unknown error'}`);
     } finally {
-      setIsLoading(false);
+      setIsTakingLoan(false);
     }
   };
 
@@ -108,6 +131,18 @@ const TakeLoan = () => {
       setLoanToValue(Math.min(ltv, 80));
     }
   };
+
+  const LoanStep = ({ number, title, children }) => (
+    <li className="flex items-start">
+      <div className="flex-shrink-0 w-8 h-8 rounded-full bg-cyan-500 text-white flex items-center justify-center mr-3 mt-1">
+        {number}
+      </div>
+      <div>
+        <h3 className="text-lg font-semibold text-cyan-400">{title}</h3>
+        <p className="text-gray-400">{children}</p>
+      </div>
+    </li>
+  );
 
   return (
     <div className="flex flex-col space-y-6">
@@ -122,71 +157,65 @@ const TakeLoan = () => {
           Secure Loan Protocol
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="space-y-6">
-            {/* NFT Selection */}
-            <div>
-              <label htmlFor="nftSelect" className="block text-sm font-medium text-cyan-400 mb-2">
-                Select NFT for Collateral
-              </label>
-              <select
-                id="nftSelect"
-                value={selectedNFT ? selectedNFT.id : ''}
-                onChange={(e) => setSelectedNFT(userNFTs.find(nft => nft.id === e.target.value))}
-                className="w-full px-4 py-3 bg-gray-800 text-cyan-400 border border-cyan-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-400"
-                disabled={isLoading}
-              >
-                <option value="">Select an NFT</option>
-                {userNFTs.map((nft) => (
-                  <option key={nft.id} value={nft.id}>
-                    Token ID: {nft.id} - Value: {nft.property_value} APT 
-                    {nft.locked_for_collateral ? ' (Locked)' : ''}
-                    {nft.loan_amount && parseFloat(nft.loan_amount) > 0 ? ' (Loan Active)' : ''}
-                  </option>
-                ))}
-              </select>
-            </div>
-  
-            {/* Lock Collateral Button */}
-            <motion.button 
-              onClick={lockCollateral} 
-              disabled={isLoading || !selectedNFT || selectedNFT.locked_for_collateral}
-              className="cyberpunk-button w-full"
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              {isLoading ? 'Processing...' : selectedNFT && selectedNFT.locked_for_collateral ? 'Already Locked' : 'Lock Collateral'}
-            </motion.button>
-  
-            {/* Loan Amount Input */}
-            <div>
-              <label htmlFor="loanAmount" className="block text-sm font-medium text-cyan-400 mb-2">
-                Loan Amount (APT)
-              </label>
-              <input
-                type="number"
-                id="loanAmount"
-                placeholder="Enter loan amount"
-                value={loanAmount}
-                onChange={(e) => {
-                  setLoanAmount(e.target.value);
-                  calculateLoanToValue(e.target.value);
-                }}
-                className="w-full px-4 py-3 bg-gray-800 text-cyan-400 border border-cyan-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-400"
-                disabled={isLoading}
-              />
-            </div>
-  
-            {/* Take Loan Button */}
-            <motion.button 
-              onClick={takeLoan} 
-              disabled={isLoading || !loanAmount || !selectedNFT || !selectedNFT.locked_for_collateral}
-              className="cyberpunk-button w-full"
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              {isLoading ? 'Processing...' : 'Take Loan'}
-            </motion.button>
-          </div>
+        <div>
+      <label htmlFor="nftSelect" className="block text-sm font-medium text-cyan-400 mb-2">
+        Select NFT for Collateral
+      </label>
+      <select
+        id="nftSelect"
+        value={selectedNFT ? selectedNFT.id : ''}
+        onChange={(e) => setSelectedNFT(userNFTs.find(nft => nft.id === e.target.value))}
+        className="w-full px-4 py-3 bg-gray-800 text-cyan-400 border border-cyan-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-400"
+        disabled={isLockingCollateral || isTakingLoan}
+      >
+        <option value="">Select an NFT</option>
+        {userNFTs.map((nft) => (
+          <option key={nft.id} value={nft.id}>
+            Token ID: {nft.id} - Value: {nft.property_value} APT 
+            {nft.locked_for_collateral ? ' (Locked)' : ''}
+            {nft.loan_amount && parseFloat(nft.loan_amount) > 0 ? ' (Loan Active)' : ''}
+          </option>
+        ))}
+      </select>
+
+      <motion.button 
+        onClick={lockCollateral} 
+        disabled={isLockingCollateral || isTakingLoan || !selectedNFT || selectedNFT.locked_for_collateral}
+        className="cyberpunk-button w-full mt-4"
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
+      >
+        {isLockingCollateral ? 'Processing...' : selectedNFT && selectedNFT.locked_for_collateral ? 'Already Locked' : 'Lock Collateral'}
+      </motion.button>
+
+      <div className="mt-4">
+        <label htmlFor="loanAmount" className="block text-sm font-medium text-cyan-400 mb-2">
+          Loan Amount (APT)
+        </label>
+        <input
+          type="number"
+          id="loanAmount"
+          placeholder="Enter loan amount"
+          value={loanAmount}
+          onChange={(e) => {
+            setLoanAmount(e.target.value);
+            calculateLoanToValue(e.target.value);
+          }}
+          className="w-full px-4 py-3 bg-gray-800 text-cyan-400 border border-cyan-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-400"
+          disabled={isTakingLoan || !selectedNFT || !selectedNFT.locked_for_collateral}
+        />
+      </div>
+
+      <motion.button 
+        onClick={takeLoan} 
+        disabled={isTakingLoan || isLockingCollateral || !loanAmount || !selectedNFT || !selectedNFT.locked_for_collateral}
+        className="cyberpunk-button w-full mt-4"
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
+      >
+        {isTakingLoan ? 'Processing...' : 'Take Loan'}
+      </motion.button>
+    </div>
   
           <div className="space-y-6">
             {/* Loan Metrics */}
@@ -289,19 +318,7 @@ const TakeLoan = () => {
       </Modal>
     </div>
   );
+
 };
-
-
-const LoanStep = ({ number, title, children }) => (
-  <li className="flex items-start">
-    <div className="flex-shrink-0 w-8 h-8 rounded-full bg-cyan-500 text-white flex items-center justify-center mr-3 mt-1">
-      {number}
-    </div>
-    <div>
-      <h3 className="text-lg font-semibold text-cyan-400">{title}</h3>
-      <p className="text-gray-400">{children}</p>
-    </div>
-  </li>
-);
 
 export default TakeLoan;

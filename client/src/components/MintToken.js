@@ -8,20 +8,30 @@ import { CurrencyDollarIcon, PhotoIcon, ArrowUpTrayIcon, InformationCircleIcon }
 import { useDropzone } from 'react-dropzone';
 import { uploadFileToPinata } from '../utils/pinataUtils';
 import { FULL_MODULE_NAME } from '../config';
-import { Canvas } from '@react-three/fiber';
-import { OrbitControls, Box } from '@react-three/drei';
 
-const NFTPreview = ({ color }) => {
+
+const ImagePreview = ({ file }) => {
+  const [preview, setPreview] = useState(null);
+
+  React.useEffect(() => {
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPreview(reader.result);
+      };
+      reader.readAsDataURL(file);
+    } else {
+      setPreview(null);
+    }
+  }, [file]);
+
+  if (!preview) return null;
+
   return (
-    <Canvas style={{ height: '300px' }}>
-      <ambientLight intensity={0.5} />
-      <spotLight position={[10, 10, 10]} angle={0.15} penumbra={1} />
-      <pointLight position={[-10, -10, -10]} />
-      <Box args={[1, 1, 1]}>
-        <meshStandardMaterial color={color} />
-      </Box>
-      <OrbitControls />
-    </Canvas>
+    <div className="mt-4">
+      <h3 className="text-xl font-bold mb-2 text-cyan-400">Preview:</h3>
+      <img src={preview} alt="Preview" className="max-w-full h-auto rounded-lg" />
+    </div>
   );
 };
 
@@ -32,13 +42,12 @@ const MintToken = () => {
   const [propertyValue, setPropertyValue] = useState('');
   const [assetType, setAssetType] = useState('');
   const [file, setFile] = useState(null);
-  const [previewColor, setPreviewColor] = useState('#00ffff');
   const [isLoading, setIsLoading] = useState(false);
   const [step, setStep] = useState(1);
 
+
   const onDrop = useCallback((acceptedFiles) => {
     setFile(acceptedFiles[0]);
-    setPreviewColor(`#${Math.floor(Math.random()*16777215).toString(16)}`);
   }, []);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({ 
@@ -132,12 +141,7 @@ const MintToken = () => {
               <ArrowUpTrayIcon className="h-12 w-12 mx-auto text-cyan-400 mb-2" />
               <p className="text-cyan-400">Drag & drop a file here, or click to upload</p>
             </div>
-            {file && (
-              <div className="mt-4">
-                <h3 className="text-xl font-bold mb-2 text">Preview:</h3>
-                <NFTPreview color={previewColor} />
-              </div>
-            )}
+            <ImagePreview file={file} />
             <div className="flex justify-between mt-4">
               <motion.button
                 onClick={() => setStep(1)}

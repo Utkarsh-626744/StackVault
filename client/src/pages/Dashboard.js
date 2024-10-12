@@ -161,7 +161,6 @@ const HeroSection = () => {
         </p>
         <div className="flex justify-center space-x-4">
           <Button text="MINT AN NFT" onClick={() => navigate('/mint')} />
-          <Button text="TAKE LOAN" onClick={() => navigate('/loan')} />
         </div>
       </motion.div>
     </section>
